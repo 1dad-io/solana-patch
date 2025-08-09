@@ -1,0 +1,27 @@
+--- /Users/admin/solana-tools/mods/v2.0.14-jito/core/src/vote_simulator.rs.orig	2024-11-03 21:53:55.000000000 +0300
++++ /Users/admin/solana-tools/mods/v2.0.14-jito/core/src/vote_simulator.rs	2024-11-05 12:46:49.000000000 +0300
+@@ -182,6 +182,7 @@
+ 
+         // Try to vote on the given slot
+         let descendants = self.bank_forks.read().unwrap().descendants();
++        let mut last_logged_vote_slot = 0;
+         let SelectVoteAndResetForkResult {
+             heaviest_fork_failures,
+             ..
+@@ -194,6 +195,7 @@
+             tower,
+             &self.latest_validator_votes_for_frozen_banks,
+             &self.heaviest_subtree_fork_choice,
++            &mut last_logged_vote_slot,
+         );
+ 
+         // Make sure this slot isn't locked out or failing threshold
+@@ -202,7 +204,7 @@
+             return heaviest_fork_failures;
+         }
+ 
+-        let new_root = tower.record_bank_vote(&vote_bank);
++        let new_root = tower.record_bank_vote(&vote_bank, true);
+         if let Some(new_root) = new_root {
+             self.set_root(new_root);
+         }

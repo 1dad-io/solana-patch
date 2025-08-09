@@ -1,0 +1,27 @@
+--- vote_simulator.rs.orig	2025-02-03 18:29:22.000000000 +0300
++++ vote_simulator.rs	2025-04-16 13:24:51.000000000 +0300
+@@ -205,6 +205,7 @@
+ 
+         // Try to vote on the given slot
+         let descendants = self.bank_forks.read().unwrap().descendants();
++        let mut last_logged_vote_slot = 0; //patch
+         let SelectVoteAndResetForkResult {
+             heaviest_fork_failures,
+             ..
+@@ -217,6 +218,7 @@
+             tower,
+             &self.latest_validator_votes_for_frozen_banks,
+             &self.heaviest_subtree_fork_choice,
++            &mut last_logged_vote_slot, //patch
+         );
+ 
+         // Make sure this slot isn't locked out or failing threshold
+@@ -225,7 +227,7 @@
+             return heaviest_fork_failures;
+         }
+ 
+-        let new_root = tower.record_bank_vote(&vote_bank);
++        let new_root = tower.record_bank_vote(&vote_bank, true); //patch +true
+         if let Some(new_root) = new_root {
+             self.set_root(new_root);
+         }

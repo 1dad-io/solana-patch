@@ -1,0 +1,7 @@
+*.rs.orig*
+!*.rs.orig
+*.rs.patch*
+!*.rs.patch
+*~
+
+.DS_Store

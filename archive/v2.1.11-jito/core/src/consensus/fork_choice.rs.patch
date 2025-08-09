@@ -1,0 +1,46 @@
+--- fork_choice.rs.orig	2025-02-03 18:29:24.000000000 +0300
++++ fork_choice.rs	2025-02-15 12:32:25.000000000 +0300
+@@ -322,6 +322,7 @@
+     tower: &Tower,
+     failure_reasons: &mut Vec<HeaviestForkFailures>,
+     switch_fork_decision: &SwitchForkDecision,
++    last_logged_vote_slot: &mut Slot, //patch
+ ) -> bool {
+     let (
+         is_locked_out,
+@@ -390,11 +391,14 @@
+         && propagation_confirmed
+         && switch_fork_decision.can_vote()
+     {
+-        info!(
+-            "voting: {} {:.1}%",
+-            candidate_vote_bank_slot,
+-            100.0 * fork_weight
+-        );
++        if candidate_vote_bank_slot != *last_logged_vote_slot { //patch
++            info!(
++                "voting: {} {:.1}%",
++                candidate_vote_bank_slot,
++                100.0 * fork_weight
++            );
++            *last_logged_vote_slot = candidate_vote_bank_slot; //patch
++        } //patch
+         true
+     } else {
+         false
+@@ -423,6 +427,7 @@
+     tower: &mut Tower,
+     latest_validator_votes_for_frozen_banks: &LatestValidatorVotesForFrozenBanks,
+     fork_choice: &HeaviestSubtreeForkChoice,
++    last_logged_vote_slot: &mut Slot, //patch: either '&mut Slot' or '&Slot'
+ ) -> SelectVoteAndResetForkResult {
+     // Try to vote on the actual heaviest fork. If the heaviest bank is
+     // locked out or fails the threshold check, the validator will:
+@@ -479,6 +484,7 @@
+         tower,
+         &mut failure_reasons,
+         &switch_fork_decision,
++        last_logged_vote_slot, //patch: same as 'tower', no '&' here
+     ) {
+         // We can vote!
+         SelectVoteAndResetForkResult {

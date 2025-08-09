@@ -1,0 +1,21 @@
+--- mod.rs.orig	2025-02-03 18:29:24.000000000 +0300
++++ mod.rs	2025-02-15 13:10:25.000000000 +0300
+@@ -698,6 +698,7 @@
+         epoch: Epoch,
+         current_slot: Slot,
+         timely_vote_credits: bool,
++        pop_expired: bool, //patch
+     ) {
+         // Ignore votes for slots earlier than we already have votes for
+         if self
+@@ -707,7 +708,9 @@
+             return;
+         }
+ 
+-        self.pop_expired_votes(next_vote_slot);
++        if pop_expired { //patch
++            self.pop_expired_votes(next_vote_slot);
++        } //patch
+ 
+         let landed_vote = LandedVote {
+             latency: if timely_vote_credits {
