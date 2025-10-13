@@ -1,5 +1,5 @@
 --- replay_stage.rs.orig	2025-06-17 10:30:49.000000000 +0300
-+++ replay_stage.rs	2025-07-22 12:06:50.000000000 +0300
++++ replay_stage.rs	2025-10-13 17:58:45.000000000 +0300
 @@ -704,6 +704,8 @@
                  &leader_schedule_cache,
              );
@@ -256,9 +256,9 @@
 +                    }
 +//patch END vote-optimizer
 +
-+                    if !vote_banks.is_empty() { // patch
-+                    if let Err(e) = Self::handle_votable_banks(
-+                        &vote_banks,
++                    if !vote_banks.is_empty() { //patch
++                    if let Err(e) = Self::handle_votable_banks( //patch *_bank -> *_banks
++                        &vote_banks, //patch vote_bank -> &vote_banks
                          switch_fork_decision,
                          &bank_forks,
                          &mut tower,
@@ -266,12 +266,12 @@
                          &mut epoch_slots_frozen_slots,
                          &drop_bank_sender,
                          wait_to_vote_slot,
-+                        pop_expired, // patch
++                        pop_expired, //patch
                      ) {
                          error!("Unable to set root: {e}");
                          return;
                      }
-+                    } // patch
++                    } //patch
                  }
                  voting_time.stop();
  
@@ -342,8 +342,8 @@
      #[allow(clippy::too_many_arguments)]
 -    fn handle_votable_bank(
 -        bank: &Arc<Bank>,
-+    fn handle_votable_banks( //patch
-+        banks: &Vec<Arc<Bank>>, //patch
++    fn handle_votable_banks( //patch *_bank -> *_banks
++        banks: &Vec<Arc<Bank>>, //patch bank: &Arc<Bank> -> banks: &Vec<Arc<Bank>>
          switch_fork_decision: &SwitchForkDecision,
          bank_forks: &Arc<RwLock<BankForks>>,
          tower: &mut Tower,
@@ -380,7 +380,7 @@
  
          Self::push_vote(
 -            bank,
-+            banks.last().unwrap(), //patch: bank -> banks.last().unwrap()
++            banks.last().unwrap(), //patch bank -> banks.last().unwrap()
              vote_account_pubkey,
              identity_keypair,
              authorized_voter_keypairs,

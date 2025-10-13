@@ -658,7 +658,7 @@ impl ReplayStage {
                 &leader_schedule_cache,
             );
 
-            let mut last_logged_vote_slot: Slot = u64::MAX; //patch: TODO: check it really updates in fork_choice.rs
+            let mut last_logged_vote_slot: Slot = u64::MAX; //patch TODO: check it really updates in fork_choice.rs
 
             loop {
                 // Stop getting entries if we get exit signal
@@ -2617,8 +2617,8 @@ impl ReplayStage {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn handle_votable_banks( //patch
-        banks: &Vec<Arc<Bank>>, //patch
+    fn handle_votable_banks( //patch *_bank -> *_banks
+        banks: &Vec<Arc<Bank>>, //patch bank: &Arc<Bank> -> banks: &Vec<Arc<Bank>>
         switch_fork_decision: &SwitchForkDecision,
         bank_forks: &Arc<RwLock<BankForks>>,
         tower: &mut Tower,
@@ -2653,8 +2653,8 @@ impl ReplayStage {
         let mut new_slots = vec![];
 
         for bank in banks.iter() {
-            if bank.is_empty() {
 //patch END
+            if bank.is_empty() {
                 datapoint_info!("replay_stage-voted_empty_bank", ("slot", bank.slot(), i64));
             }
             new_slots.push(bank.slot()); //patch
@@ -2764,7 +2764,7 @@ impl ReplayStage {
         } //patch
 
         Self::push_vote(
-            banks.last().unwrap(), //patch: bank -> banks.last().unwrap()
+            banks.last().unwrap(), //patch bank -> banks.last().unwrap()
             vote_account_pubkey,
             identity_keypair,
             authorized_voter_keypairs,

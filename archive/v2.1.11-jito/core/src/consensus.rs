@@ -311,7 +311,7 @@ impl Default for Tower {
             last_vote_tx_blockhash: BlockhashStatus::default(),
             stray_restored_slot: Option::default(),
             last_switch_threshold_check: Option::default(),
-//patch BEGIN
+//patch BEGIN `impl Default`
             mostly_confirmed_threshold: None,
             threshold_ahead_count: None,
             after_skip_threshold: None,

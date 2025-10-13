@@ -1203,9 +1203,9 @@ impl ReplayStage {
                     }
 //patch END vote-optimizer
 
-                    if !vote_banks.is_empty() { // patch
-                    if let Err(e) = Self::handle_votable_banks(
-                        &vote_banks,
+                    if !vote_banks.is_empty() { //patch
+                    if let Err(e) = Self::handle_votable_banks( //patch *_bank -> *_banks
+                        &vote_banks, //patch vote_bank -> &vote_banks
                         switch_fork_decision,
                         &bank_forks,
                         &mut tower,
@@ -1231,12 +1231,12 @@ impl ReplayStage {
                         &mut epoch_slots_frozen_slots,
                         &drop_bank_sender,
                         wait_to_vote_slot,
-                        pop_expired, // patch
+                        pop_expired, //patch
                     ) {
                         error!("Unable to set root: {e}");
                         return;
                     }
-                    } // patch
+                    } //patch
                 }
                 voting_time.stop();
 
@@ -2655,8 +2655,8 @@ impl ReplayStage {
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn handle_votable_banks( //patch
-        banks: &Vec<Arc<Bank>>, //patch
+    fn handle_votable_banks( //patch *_bank -> *_banks
+        banks: &Vec<Arc<Bank>>, //patch bank: &Arc<Bank> -> banks: &Vec<Arc<Bank>>
         switch_fork_decision: &SwitchForkDecision,
         bank_forks: &Arc<RwLock<BankForks>>,
         tower: &mut Tower,
@@ -2753,7 +2753,7 @@ impl ReplayStage {
     } //patch
 
         Self::push_vote(
-            banks.last().unwrap(), //patch: bank -> banks.last().unwrap()
+            banks.last().unwrap(), //patch bank -> banks.last().unwrap()
             vote_account_pubkey,
             identity_keypair,
             authorized_voter_keypairs,

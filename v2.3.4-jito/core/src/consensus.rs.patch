@@ -1,5 +1,5 @@
 --- consensus.rs.orig	2025-06-17 10:30:48.000000000 +0300
-+++ consensus.rs	2025-08-09 14:58:46.000000000 +0300
++++ consensus.rs	2025-10-13 18:24:30.000000000 +0300
 @@ -44,10 +44,15 @@
      std::{
          cmp::Ordering,
@@ -34,7 +34,7 @@
              last_vote_tx_blockhash: BlockhashStatus::default(),
              stray_restored_slot: Option::default(),
              last_switch_threshold_check: Option::default(),
-+//patch BEGIN
++//patch BEGIN `impl Default`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,
@@ -48,7 +48,7 @@
              last_timestamp: tower.last_timestamp,
              stray_restored_slot: tower.stray_restored_slot,
              last_switch_threshold_check: tower.last_switch_threshold_check,
-+//patch BEGIN
++//patch BEGIN `impl From<Tower1_14_11>`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,
@@ -62,7 +62,7 @@
              last_timestamp: tower.last_timestamp,
              stray_restored_slot: tower.stray_restored_slot,
              last_switch_threshold_check: tower.last_switch_threshold_check,
-+//patch BEGIN
++//patch BEGIN `impl From<Tower1_7_14>`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,

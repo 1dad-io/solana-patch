@@ -263,7 +263,7 @@ impl Default for Tower {
             last_vote_tx_blockhash: BlockhashStatus::default(),
             stray_restored_slot: Option::default(),
             last_switch_threshold_check: Option::default(),
-//patch BEGIN
+//patch BEGIN `impl Default`
             mostly_confirmed_threshold: None,
             threshold_ahead_count: None,
             after_skip_threshold: None,
@@ -309,7 +309,7 @@ impl From<Tower1_14_11> for Tower {
             last_timestamp: tower.last_timestamp,
             stray_restored_slot: tower.stray_restored_slot,
             last_switch_threshold_check: tower.last_switch_threshold_check,
-//patch BEGIN
+//patch BEGIN `impl From<Tower1_14_11>`
             mostly_confirmed_threshold: None,
             threshold_ahead_count: None,
             after_skip_threshold: None,
@@ -334,7 +334,7 @@ impl From<Tower1_7_14> for Tower {
             last_timestamp: tower.last_timestamp,
             stray_restored_slot: tower.stray_restored_slot,
             last_switch_threshold_check: tower.last_switch_threshold_check,
-//patch BEGIN
+//patch BEGIN `impl From<Tower1_7_14>`
             mostly_confirmed_threshold: None,
             threshold_ahead_count: None,
             after_skip_threshold: None,
