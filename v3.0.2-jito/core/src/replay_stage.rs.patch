@@ -1,10 +1,10 @@
 --- replay_stage.rs.orig	2025-09-23 08:43:01.000000000 +0300
-+++ replay_stage.rs	2025-10-13 17:52:02.000000000 +0300
++++ replay_stage.rs	2025-10-13 18:04:45.000000000 +0300
 @@ -716,6 +716,8 @@
                  &leader_schedule_cache,
              );
  
-+            let mut last_logged_vote_slot: Slot = u64::MAX; //patch: TODO: check it really updates in fork_choice.rs
++            let mut last_logged_vote_slot: Slot = u64::MAX; //patch TODO: check it really updates in fork_choice.rs
 +
              loop {
                  // Stop getting entries if we get exit signal
