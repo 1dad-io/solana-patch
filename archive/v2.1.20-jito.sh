@@ -22,5 +22,3 @@ export CI_COMMIT="$(git rev-parse --short=8 HEAD)"
 #    “hash the scalar proof components into the transcript to derive `c`
 #   in range proof”
 # The sha will vary depending on your local settings
-
-# Build and deploy as you normally would.
