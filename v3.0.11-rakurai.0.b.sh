@@ -21,7 +21,7 @@ rakurai(){
 	
 	# get available versions
 	info "Fetching available versions"
-	version_exists_for_os "${rakurai_os}" "${rakurai_ver}" || error ${pkg_unsupported//PKG/${rakurai_ver}}
+	version_exists_for_os "${rakurai_os}" "${rakurai_ver}" || error ${err_pkg_unsupported//PKG/${rakurai_ver}}
 	
 	# download the scheduler binary
 	info "Downloading the scheduler binary"
