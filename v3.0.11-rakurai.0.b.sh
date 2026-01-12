@@ -3,7 +3,6 @@
 # config
 rakurai_api=https://api.rakurai.io/api/v1
 rakurai_os=ubuntu_24.04
-rakurai_ver="v${version}"
 
 version_exists_for_os() {
 	local os="$1"
@@ -21,7 +20,7 @@ rakurai(){
 	
 	# get available versions
 	info "Fetching available versions"
-	version_exists_for_os "${rakurai_os}" "${rakurai_ver}" || error ${err_pkg_unsupported//PKG/${rakurai_ver}}
+	version_exists_for_os "${rakurai_os}" "$TAG" || error ${err_pkg_unsupported//PKG/$TAG}
 	
 	# download the scheduler binary
 	info "Downloading the scheduler binary"
@@ -30,7 +29,7 @@ rakurai(){
 		-d "{
 			\"activation_account\": \"$RAA\",
 			\"signature\": \"${sig}\",
-			\"version\": \"${rakurai_ver}\",
+			\"version\": \"$TAG\",
 			\"os\": \"${rakurai_os}\"
 		}" \
 		--fail-with-body || error "$(cat rakurai-scheduler.tar.gz)"
