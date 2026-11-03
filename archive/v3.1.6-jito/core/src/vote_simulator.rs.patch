@@ -1,11 +1,11 @@
---- vote_simulator.rs.orig	2025-11-27 14:04:47.000000000 +0300
-+++ vote_simulator.rs	2026-01-20 15:47:10.000000000 +0300
+--- vote_simulator.rs.orig	2025-11-27 15:04:47.000000000 +0400
++++ vote_simulator.rs	2026-11-01 12:43:20.000000000 +0400
 @@ -113,7 +113,7 @@
                          parent_bank.get_vote_account(&keypairs.vote_keypair.pubkey())
                      {
                          let mut vote_state = TowerVoteState::from(vote_account.vote_state_view());
 -                        vote_state.process_next_vote_slot(parent);
-+                        vote_state.process_next_vote_slot(parent, true); //patch +true
++                        vote_state.process_next_vote_slot(parent, true);
                          TowerSync::new(
                              vote_state.votes,
                              vote_state.root_slot,
@@ -13,7 +13,7 @@
  
          // Try to vote on the given slot
          let descendants = self.bank_forks.read().unwrap().descendants();
-+        let mut last_logged_vote_slot = 0; //patch
++        let mut last_logged_vote_slot = 0;
          let SelectVoteAndResetForkResult {
              heaviest_fork_failures,
              ..
@@ -21,7 +21,7 @@
              tower,
              &self.latest_validator_votes_for_frozen_banks,
              &self.tbft_structs.heaviest_subtree_fork_choice,
-+            &mut last_logged_vote_slot, //patch
++            &mut last_logged_vote_slot,
          );
  
          // Make sure this slot isn't locked out or failing threshold
@@ -30,7 +30,7 @@
          }
  
 -        let new_root = tower.record_bank_vote(&vote_bank);
-+        let new_root = tower.record_bank_vote(&vote_bank, true); //patch +true
++        let new_root = tower.record_bank_vote(&vote_bank, true);
          if let Some(new_root) = new_root {
              self.set_root(new_root);
          }

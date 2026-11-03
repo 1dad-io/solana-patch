@@ -698,7 +698,7 @@ impl VoteState {
         epoch: Epoch,
         current_slot: Slot,
         timely_vote_credits: bool,
-        pop_expired: bool, //patch
+        pop_expired: bool,
     ) {
         // Ignore votes for slots earlier than we already have votes for
         if self
@@ -708,9 +708,9 @@ impl VoteState {
             return;
         }
 
-        if pop_expired { //patch
+        if pop_expired {
             self.pop_expired_votes(next_vote_slot);
-        } //patch
+        }
 
         let landed_vote = LandedVote {
             latency: if timely_vote_credits {

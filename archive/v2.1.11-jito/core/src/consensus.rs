@@ -42,15 +42,13 @@ use {
     std::{
         cmp::Ordering,
         collections::{HashMap, HashSet},
-        fs::read_to_string, //patch
+        fs::read_to_string,
         ops::{
             Bound::{Included, Unbounded},
             Deref,
         },
-//patch BEGIN
         path::Path,
         time::SystemTime,
-//patch END
     },
     thiserror::Error,
 };
@@ -208,13 +206,11 @@ impl TowerVersions {
                     last_timestamp: tower.last_timestamp,
                     stray_restored_slot: tower.stray_restored_slot,
                     last_switch_threshold_check: tower.last_switch_threshold_check,
-//patch BEGIN
                     mostly_confirmed_threshold: None,
                     threshold_ahead_count: None,
                     after_skip_threshold: None,
                     threshold_escape_count: None,
                     last_config_check_seconds: 0,
-//patch END
                 }
             }
             TowerVersions::V1_14_11(tower) => Tower {
@@ -228,13 +224,11 @@ impl TowerVersions {
                 last_timestamp: tower.last_timestamp,
                 stray_restored_slot: tower.stray_restored_slot,
                 last_switch_threshold_check: tower.last_switch_threshold_check,
-//patch BEGIN
                 mostly_confirmed_threshold: None,
                 threshold_ahead_count: None,
                 after_skip_threshold: None,
                 threshold_escape_count: None,
                 last_config_check_seconds: 0,
-//patch END
             },
             TowerVersions::Current(tower) => tower,
         }
@@ -285,7 +279,6 @@ pub struct Tower {
     stray_restored_slot: Option<Slot>,
     #[serde(skip)]
     pub last_switch_threshold_check: Option<(Slot, SwitchForkDecision)>,
-//patch BEGIN
     #[serde(skip)]
     mostly_confirmed_threshold: Option<f64>,
     #[serde(skip)]
@@ -296,7 +289,6 @@ pub struct Tower {
     threshold_escape_count: Option<u8>,
     #[serde(skip)]
     last_config_check_seconds: u64,
-//patch END
 }
 
 impl Default for Tower {
@@ -311,13 +303,11 @@ impl Default for Tower {
             last_vote_tx_blockhash: BlockhashStatus::default(),
             stray_restored_slot: Option::default(),
             last_switch_threshold_check: Option::default(),
-//patch BEGIN `impl Default`
             mostly_confirmed_threshold: None,
             threshold_ahead_count: None,
             after_skip_threshold: None,
             threshold_escape_count: None,
             last_config_check_seconds: 0,
-//patch END
         };
         // VoteState::root_slot is ensured to be Some in Tower
         tower.vote_state.root_slot = Some(Slot::default());
@@ -560,7 +550,6 @@ impl Tower {
             .unwrap_or(false)
     }
 
-//patch BEGIN fn
     pub fn is_mostly_confirmed_threshold_enabled(&self) -> bool {
         if let Some(_) = self.mostly_confirmed_threshold {
             true
@@ -586,7 +575,6 @@ impl Tower {
             .map(|stake| (*stake as f64 / total_stake as f64) > mostly_confirmed_threshold)
             .unwrap_or(false)
     }
-//patch END fn
 
     pub fn tower_slots(&self) -> Vec<Slot> {
         self.vote_state.tower()
@@ -653,7 +641,7 @@ impl Tower {
         vote_state.last_voted_slot()
     }
 
-    pub fn record_bank_vote(&mut self, bank: &Bank, pop_expired: bool) -> Option<Slot> { //patch +pop_expired
+    pub fn record_bank_vote(&mut self, bank: &Bank, pop_expired: bool) -> Option<Slot> {
         // Returns the new root if one is made after applying a vote for the given bank to
         // `self.vote_state`
         let block_id = bank.block_id().unwrap_or_else(|| {
@@ -669,7 +657,7 @@ impl Tower {
             bank.feature_set
                 .is_active(&solana_feature_set::enable_tower_sync_ix::id()),
             block_id,
-            pop_expired, //patch
+            pop_expired,
         )
     }
 
@@ -708,7 +696,6 @@ impl Tower {
         self.last_vote = new_vote;
     }
 
-//patch BEGIN update_config
     pub fn update_config(&mut self) {
         // Use this opportunity to possibly load new value for mostly_confirmed_threshold
         let config_check_seconds = SystemTime::now()
@@ -834,7 +821,6 @@ impl Tower {
     pub fn get_threshold_escape_count(&self) -> Option<u8> {
         return self.threshold_escape_count;
     }
-//patch END update_config
 
     fn record_bank_vote_and_update_lockouts(
         &mut self,
@@ -842,13 +828,13 @@ impl Tower {
         vote_hash: Hash,
         enable_tower_sync_ix: bool,
         block_id: Hash,
-        pop_expired: bool, //patch
+        pop_expired: bool,
     ) -> Option<Slot> {
         trace!("{} record_vote for {}", self.node_pubkey, vote_slot);
         let old_root = self.root();
 
         let vote = Vote::new(vec![vote_slot], vote_hash);
-        let result = process_vote_unchecked(&mut self.vote_state, vote, pop_expired); //patch +pop_expired
+        let result = process_vote_unchecked(&mut self.vote_state, vote, pop_expired);
         if result.is_err() {
             panic!(
                 "Error while recording vote {} {} in local tower {:?}",
@@ -873,7 +859,7 @@ impl Tower {
 
     #[cfg(feature = "dev-context-only-utils")]
     pub fn record_vote(&mut self, slot: Slot, hash: Hash) -> Option<Slot> {
-        self.record_bank_vote_and_update_lockouts(slot, hash, true, Hash::default(), true) //patch +true
+        self.record_bank_vote_and_update_lockouts(slot, hash, true, Hash::default(), true)
     }
 
     #[cfg(feature = "dev-context-only-utils")]
@@ -993,7 +979,6 @@ impl Tower {
         false
     }
 
-//patch BEGIN fn
     // This version first pushes all of the 'including' slots onto the bank before evaluating 'slot'
     pub fn is_locked_out_including(
         &self,
@@ -1050,7 +1035,6 @@ impl Tower {
             }
         }
     }
-//patch END fn
 
     /// Checks if a vote for `candidate_slot` is usable in a switching proof
     /// from `last_voted_slot` to `switch_slot`.

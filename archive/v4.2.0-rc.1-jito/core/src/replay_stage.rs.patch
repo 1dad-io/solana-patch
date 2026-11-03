@@ -1,10 +1,10 @@
 --- replay_stage.rs.orig	2026-08-08 09:41:21.000000000 +0400
-+++ replay_stage.rs	2026-08-08 10:19:44.000000000 +0400
++++ replay_stage.rs	2026-10-28 13:56:58.000000000 +0400
 @@ -937,6 +937,8 @@
                  while poh_controller.has_pending_message() && !exit.load(Ordering::Relaxed) {}
              }
  
-+            let mut last_logged_vote_slot: Slot = u64::MAX; //patch TODO: check it really updates in fork_choice.rs
++            let mut last_logged_vote_slot: Slot = u64::MAX;
 +
              loop {
                  // Stop getting entries if we get exit signal
@@ -14,7 +14,7 @@
                      for slot in newly_computed_slot_stats {
                          let fork_stats = progress.get_fork_stats(slot).unwrap();
 -                        let duplicate_confirmed_forks = Self::tower_duplicate_confirmed_forks(
-+                        let (duplicate_confirmed_forks, mostly_confirmed_slots) = Self::tower_duplicate_confirmed_forks( //patch +mostly_confirmed_slots
++                        let (duplicate_confirmed_forks, mostly_confirmed_slots) = Self::tower_duplicate_confirmed_forks(
                              &tower,
                              &fork_stats.voted_stakes,
                              fork_stats.total_stake,
@@ -22,7 +22,7 @@
  
                          Self::mark_slots_duplicate_confirmed(
                              &duplicate_confirmed_forks,
-+                            &mostly_confirmed_slots, //patch
++                            &mostly_confirmed_slots,
                              &blockstore,
                              &bank_forks,
                              &mut progress,
@@ -30,7 +30,7 @@
                          &mut tower,
                          &latest_validator_votes_for_frozen_banks,
                          &tbft_structs.heaviest_subtree_fork_choice,
-+                        &mut last_logged_vote_slot, //patch
++                        &mut last_logged_vote_slot,
                      );
                      select_vote_and_reset_forks_time.stop();
  
@@ -38,18 +38,17 @@
                      }
                      heaviest_fork_failures_time.stop();
  
-+                    tower.update_config(); //patch
++                    tower.update_config();
 +
                      let mut voting_time = Measure::start("voting_time");
                      // Vote on a fork
                      if let Some((ref vote_bank, ref switch_fork_decision)) = vote_bank {
-@@ -1323,8 +1329,216 @@
+@@ -1323,8 +1329,214 @@
                              );
                          }
  
 -                        Self::handle_votable_bank(
 -                            vote_bank,
-+//patch BEGIN vote-optimizer
 +                        let mut vote_banks = vec![];
 +                        let mut pop_expired = true;
 +
@@ -102,7 +101,7 @@
 +                                for bank in &vote_banks {
 +                                    // 1
 +                                    if bank.slot() <= most_recent_voted_slot.unwrap_or(0) {
-+                                        info!( //patch +info
++                                        info!(
 +                                            "vote-optimizer cannot vote on {} because it's already-voted-on <= {}",
 +                                            bank.slot(),
 +                                            most_recent_voted_slot.unwrap_or(0)
@@ -254,36 +253,34 @@
 +                            // Not threshold voting, so just vote on the proposed bank
 +                            vote_banks.push(vote_bank.clone());
 +                        }
-+//patch END vote-optimizer
 +
-+                        if !vote_banks.is_empty() { //patch
-+                        Self::handle_votable_banks( //patch *_bank -> *_banks
-+                            &vote_banks, //patch vote_bank -> &vote_banks
++                        if !vote_banks.is_empty() {
++                        Self::handle_votable_banks(
++                            &vote_banks,
                              switch_fork_decision,
                              &bank_forks,
                              &mut tower,
-@@ -1347,7 +1561,9 @@
+@@ -1347,7 +1559,9 @@
                              wait_to_vote_slot,
                              migration_status.as_ref(),
                              &mut tbft_structs,
-+                            pop_expired, //patch
++                            pop_expired,
                          );
-+                        } //patch
++                        }
                      }
                      voting_time.stop();
  
-@@ -1905,6 +2121,60 @@
+@@ -1905,6 +2119,58 @@
          }
      }
  
-+//patch BEGIN vote-optimizer fn
 +    fn first_mostly_confirmed_bank(bank: Arc<Bank>, progress: &ProgressMap) -> Option<Arc<Bank>> {
 +        if progress
 +            .get_fork_stats(bank.slot())
 +            .unwrap()
 +            .is_mostly_confirmed
 +        {
-+            info!("vote-optimizer {} is mostly confirmed (first_mostly_confirmed_bank)", bank.slot()); //patch +info
++            info!("vote-optimizer {} is mostly confirmed (first_mostly_confirmed_bank)", bank.slot());
 +            Some(bank.clone())
 +        } else if let Some(parent) = bank.parent() {
 +            ReplayStage::first_mostly_confirmed_bank(parent.clone(), progress)
@@ -298,7 +295,7 @@
 +            .unwrap()
 +            .duplicate_confirmed_hash.is_some()
 +        {
-+            info!("vote-optimizer {} is duplicate confirmed (last_confirmed_slot)", bank.slot()); //patch +info
++            info!("vote-optimizer {} is duplicate confirmed (last_confirmed_slot)", bank.slot());
 +            bank.slot()
 +        } else if let Some(parent) = bank.parent() {
 +            ReplayStage::last_confirmed_slot(&parent, progress)
@@ -328,113 +325,106 @@
 +
 +        banks.into_iter().rev().collect()
 +    }
-+//patch END vote-optimizer fn
 +
      fn is_partition_detected(
          ancestors: &HashMap<Slot, HashSet<Slot>>,
          last_voted_slot: Slot,
-@@ -3023,8 +3293,8 @@
+@@ -3023,8 +3289,8 @@
      }
  
      #[allow(clippy::too_many_arguments)]
 -    fn handle_votable_bank(
 -        bank: &Arc<Bank>,
-+    fn handle_votable_banks( //patch *_bank -> *_banks
-+        banks: &Vec<Arc<Bank>>, //patch bank: &Arc<Bank> -> banks: &Vec<Arc<Bank>>
++    fn handle_votable_banks(
++        banks: &Vec<Arc<Bank>>,
          switch_fork_decision: &SwitchForkDecision,
          bank_forks: &RwLock<BankForks>,
          tower: &mut Tower,
-@@ -3047,13 +3317,23 @@
+@@ -3047,13 +3313,21 @@
          wait_to_vote_slot: Option<Slot>,
          migration_status: &MigrationStatus,
          tbft_structs: &mut TowerBFTStructures,
-+        pop_expired: bool, //patch
++        pop_expired: bool,
      ) {
          assert!(!migration_status.is_alpenglow_enabled());
-+//patch BEGIN
 +        assert!(!banks.is_empty());
 +
 +        // Track the newly voted on slots so that they can be logged
 +        let mut new_slots = vec![];
 +
 +        for bank in banks.iter() {
-+//patch END
          if bank.is_empty() {
              datapoint_info!("replay_stage-voted_empty_bank", ("slot", bank.slot(), i64));
          }
-+        new_slots.push(bank.slot()); //patch
++        new_slots.push(bank.slot());
          trace!("handle votable bank {}", bank.slot());
 -        let new_root = tower.record_bank_vote(bank).filter(|root| {
-+        let new_root = tower.record_bank_vote(bank, pop_expired).filter(|root| { //patch +pop_expired
++        let new_root = tower.record_bank_vote(bank, pop_expired).filter(|root| {
              // We do not root during the migration - post genesis rooting is handled by votor
              migration_status.should_report_commitment_or_root(*root)
          });
-@@ -3127,9 +3407,11 @@
+@@ -3127,9 +3401,11 @@
          );
          update_commitment_cache_time.stop();
          replay_timing.update_commitment_cache_us += update_commitment_cache_time.as_us();
-+        info!("voting for window: {:?}", new_slots); //patch
-+        } //patch
++        info!("voting for window: {:?}", new_slots);
++        }
  
          Self::push_vote(
 -            bank,
-+            banks.last().unwrap(), //patch bank -> banks.last().unwrap()
++            banks.last().unwrap(),
              vote_account_pubkey,
              identity_keypair,
              authorized_voter_keypairs,
-@@ -4858,6 +5140,7 @@
+@@ -4858,6 +5134,7 @@
      #[allow(clippy::too_many_arguments)]
      fn mark_slots_duplicate_confirmed(
          confirmed_slots: &[(Slot, Hash)],
-+        mostly_confirmed_forks: &[Slot], //patch
++        mostly_confirmed_forks: &[Slot],
          blockstore: &Blockstore,
          bank_forks: &RwLock<BankForks>,
          progress: &mut ProgressMap,
-@@ -4878,6 +5161,7 @@
+@@ -4878,6 +5155,7 @@
              }
  
              progress.set_duplicate_confirmed_hash(*slot, *frozen_hash);
-+            info!("vote-optimizer {} duplicate_confirmed_hash={}", *slot, *frozen_hash); //patch +info
++            info!("vote-optimizer {} duplicate_confirmed_hash={}", *slot, *frozen_hash);
              if let Some(prev_hash) = duplicate_confirmed_slots.insert(*slot, *frozen_hash) {
                  assert_eq!(
                      prev_hash, *frozen_hash,
-@@ -4906,6 +5190,12 @@
+@@ -4906,6 +5184,10 @@
                  SlotStateUpdate::DuplicateConfirmed(duplicate_confirmed_state),
              );
          }
-+//patch BEGIN
 +        for slot in mostly_confirmed_forks.iter() {
 +            progress.set_mostly_confirmed_slot(*slot);
-+            info!("vote-optimizer {} is_mostly_confirmed=true (mark_slots_duplicate_confirmed)", *slot); //patch +info
++            info!("vote-optimizer {} is_mostly_confirmed=true (mark_slots_duplicate_confirmed)", *slot);
 +        }
-+//patch END
      }
  
      fn tower_duplicate_confirmed_forks(
-@@ -4914,8 +5204,9 @@
+@@ -4914,8 +5196,9 @@
          total_stake: Stake,
          progress: &ProgressMap,
          bank_forks: &RwLock<BankForks>,
 -    ) -> Vec<(Slot, Hash)> {
-+    ) -> (Vec<(Slot, Hash)>, Vec<Slot>) { //patch +Vec<Slot>
++    ) -> (Vec<(Slot, Hash)>, Vec<Slot>) {
          let mut duplicate_confirmed_forks = vec![];
-+        let mut mostly_confirmed_forks = vec![]; //patch
++        let mut mostly_confirmed_forks = vec![];
          for (slot, prog) in progress.iter() {
              if prog.fork_stats.duplicate_confirmed_hash.is_some() {
                  continue;
-@@ -4951,8 +5242,14 @@
+@@ -4951,8 +5234,12 @@
                      voted_stakes.get(slot)
                  );
              }
-+//patch BEGIN
 +            if tower.is_slot_mostly_confirmed(*slot, voted_stakes, total_stake) {
 +                mostly_confirmed_forks.push(*slot);
-+                info!("validator fork mostly confirmed {} {}ms", *slot, duration); //patch +info
++                info!("validator fork mostly confirmed {} {}ms", *slot, duration);
 +            }
-+//patch END
          }
 -        duplicate_confirmed_forks
-+        (duplicate_confirmed_forks, mostly_confirmed_forks) //patch +mostly_confirmed_forks
++        (duplicate_confirmed_forks, mostly_confirmed_forks)
      }
  
      #[allow(clippy::too_many_arguments)]

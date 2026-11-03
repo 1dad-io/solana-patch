@@ -27,7 +27,7 @@
      tower: &mut Tower,
      latest_validator_votes_for_frozen_banks: &LatestValidatorVotesForFrozenBanks,
      fork_choice: &HeaviestSubtreeForkChoice,
-+    last_logged_vote_slot: &mut Slot, //patch TODO: either '&mut Slot' or '&Slot'
++    last_logged_vote_slot: &mut Slot, //patch
  ) -> SelectVoteAndResetForkResult {
      // Try to vote on the actual heaviest fork. If the heaviest bank is
      // locked out or fails the threshold check, the validator will:

@@ -1,82 +1,71 @@
---- consensus.rs.orig	2025-04-10 11:07:57.000000000 +0300
-+++ consensus.rs	2025-10-13 18:27:48.000000000 +0300
-@@ -46,10 +46,15 @@
+--- consensus.rs.orig	2025-04-10 12:07:57.000000000 +0400
++++ consensus.rs	2026-11-01 13:58:44.000000000 +0400
+@@ -46,10 +46,13 @@
      std::{
          cmp::Ordering,
          collections::{HashMap, HashSet},
-+        fs::read_to_string, //patch
++        fs::read_to_string,
          ops::{
              Bound::{Included, Unbounded},
              Deref,
          },
-+//patch BEGIN
 +        path::Path,
 +        time::SystemTime,
-+//patch END
      },
      thiserror::Error,
  };
-@@ -237,6 +242,13 @@
+@@ -237,6 +240,11 @@
      // bank_forks (=~ ledger) lacks the slot or not.
      stray_restored_slot: Option<Slot>,
      pub last_switch_threshold_check: Option<(Slot, SwitchForkDecision)>,
-+//patch BEGIN
 +    mostly_confirmed_threshold: Option<f64>,
 +    threshold_ahead_count: Option<u8>,
 +    after_skip_threshold: Option<u8>,
 +    threshold_escape_count: Option<u8>,
 +    last_config_check_seconds: u64,
-+//patch END
  }
  
  impl Default for Tower {
-@@ -251,6 +263,13 @@
+@@ -251,6 +259,11 @@
              last_vote_tx_blockhash: BlockhashStatus::default(),
              stray_restored_slot: Option::default(),
              last_switch_threshold_check: Option::default(),
-+//patch BEGIN `impl Default`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,
 +            threshold_escape_count: None,
 +            last_config_check_seconds: 0,
-+//patch END
          };
          // VoteState::root_slot is ensured to be Some in Tower
          tower.vote_state.root_slot = Some(Slot::default());
-@@ -290,6 +309,13 @@
+@@ -290,6 +303,11 @@
              last_timestamp: tower.last_timestamp,
              stray_restored_slot: tower.stray_restored_slot,
              last_switch_threshold_check: tower.last_switch_threshold_check,
-+//patch BEGIN `impl From<Tower1_14_11>`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,
 +            threshold_escape_count: None,
 +            last_config_check_seconds: 0,
-+//patch END
          }
      }
  }
-@@ -308,6 +334,13 @@
+@@ -308,6 +326,11 @@
              last_timestamp: tower.last_timestamp,
              stray_restored_slot: tower.stray_restored_slot,
              last_switch_threshold_check: tower.last_switch_threshold_check,
-+//patch BEGIN `impl From<Tower1_7_14>`
 +            mostly_confirmed_threshold: None,
 +            threshold_ahead_count: None,
 +            after_skip_threshold: None,
 +            threshold_escape_count: None,
 +            last_config_check_seconds: 0,
-+//patch END
          }
      }
  }
-@@ -547,6 +580,34 @@
+@@ -547,6 +570,32 @@
              .unwrap_or(false)
      }
  
-+//patch BEGIN fn
 +    pub fn is_mostly_confirmed_threshold_enabled(&self) -> bool {
 +        if let Some(_) = self.mostly_confirmed_threshold {
 +            true
@@ -102,33 +91,31 @@
 +            .map(|stake| (*stake as f64 / total_stake as f64) > mostly_confirmed_threshold)
 +            .unwrap_or(false)
 +    }
-+//patch END fn
 +
      pub fn tower_slots(&self) -> Vec<Slot> {
          self.vote_state.tower()
      }
-@@ -612,7 +673,7 @@
+@@ -612,7 +661,7 @@
          vote_state.last_voted_slot()
      }
  
 -    pub fn record_bank_vote(&mut self, bank: &Bank) -> Option<Slot> {
-+    pub fn record_bank_vote(&mut self, bank: &Bank, pop_expired: bool) -> Option<Slot> { //patch +pop_expired
++    pub fn record_bank_vote(&mut self, bank: &Bank, pop_expired: bool) -> Option<Slot> {
          // Returns the new root if one is made after applying a vote for the given bank to
          // `self.vote_state`
          let block_id = bank.block_id().unwrap_or_else(|| {
-@@ -628,6 +689,7 @@
+@@ -628,6 +677,7 @@
              bank.feature_set
                  .is_active(&agave_feature_set::enable_tower_sync_ix::id()),
              block_id,
-+            pop_expired, //patch
++            pop_expired,
          )
      }
  
-@@ -658,12 +720,141 @@
+@@ -658,12 +708,139 @@
          self.last_vote = new_vote;
      }
  
-+//patch BEGIN update_config
 +    pub fn update_config(&mut self) {
 +        // Use this opportunity to possibly load new value for mostly_confirmed_threshold
 +        let config_check_seconds = SystemTime::now()
@@ -254,7 +241,6 @@
 +    pub fn get_threshold_escape_count(&self) -> Option<u8> {
 +        return self.threshold_escape_count;
 +    }
-+//patch END update_config
 +
      fn record_bank_vote_and_update_lockouts(
          &mut self,
@@ -262,42 +248,41 @@
          vote_hash: Hash,
          enable_tower_sync_ix: bool,
          block_id: Hash,
-+        pop_expired: bool, //patch
++        pop_expired: bool,
      ) -> Option<Slot> {
          if let Some(last_voted_slot) = self.vote_state.last_voted_slot() {
              if vote_slot <= last_voted_slot {
-@@ -679,7 +870,7 @@
+@@ -679,7 +856,7 @@
          trace!("{} record_vote for {}", self.node_pubkey, vote_slot);
          let old_root = self.root();
  
 -        self.vote_state.process_next_vote_slot(vote_slot);
-+        self.vote_state.process_next_vote_slot(vote_slot, pop_expired); //patch +pop_expired
++        self.vote_state.process_next_vote_slot(vote_slot, pop_expired);
          self.update_last_vote_from_vote_state(vote_hash, enable_tower_sync_ix, block_id);
  
          let new_root = self.root();
-@@ -698,7 +889,7 @@
+@@ -698,7 +875,7 @@
  
      #[cfg(feature = "dev-context-only-utils")]
      pub fn record_vote(&mut self, slot: Slot, hash: Hash) -> Option<Slot> {
 -        self.record_bank_vote_and_update_lockouts(slot, hash, true, Hash::default())
-+        self.record_bank_vote_and_update_lockouts(slot, hash, true, Hash::default(), true) //patch +true
++        self.record_bank_vote_and_update_lockouts(slot, hash, true, Hash::default(), true)
      }
  
      #[cfg(feature = "dev-context-only-utils")]
-@@ -796,7 +987,7 @@
+@@ -796,7 +973,7 @@
          // remaining voted slots are on a different fork from the checked slot,
          // it's still locked out.
          let mut vote_state = self.vote_state.clone();
 -        vote_state.process_next_vote_slot(slot);
-+        vote_state.process_next_vote_slot(slot, true); //patch +true
++        vote_state.process_next_vote_slot(slot, true);
          for vote in &vote_state.votes {
              if slot != vote.slot() && !ancestors.contains(&vote.slot()) {
                  return true;
-@@ -817,6 +1008,65 @@
+@@ -817,6 +994,63 @@
          false
      }
  
-+//patch BEGIN fn
 +    // This version first pushes all of the 'including' slots onto the bank before evaluating 'slot'
 +    pub fn is_locked_out_including(
 +        &self,
@@ -354,17 +339,16 @@
 +            }
 +        }
 +    }
-+//patch END fn
 +
      /// Checks if a vote for `candidate_slot` is usable in a switching proof
      /// from `last_voted_slot` to `switch_slot`.
      /// We assume `candidate_slot` is not an ancestor of `last_voted_slot`.
-@@ -1338,7 +1588,7 @@
+@@ -1338,7 +1572,7 @@
          let mut threshold_decisions = vec![];
          // Generate the vote state assuming this vote is included.
          let mut vote_state = self.vote_state.clone();
 -        vote_state.process_next_vote_slot(slot);
-+        vote_state.process_next_vote_slot(slot, true); //patch +true
++        vote_state.process_next_vote_slot(slot, true);
  
          // Assemble all the vote thresholds and depths to check.
          let vote_thresholds_and_depths = vec![

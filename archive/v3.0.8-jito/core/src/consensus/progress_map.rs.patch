@@ -1,23 +1,21 @@
---- progress_map.rs.orig	2025-09-23 08:43:01.000000000 +0300
-+++ progress_map.rs	2025-10-07 13:08:14.000000000 +0300
+--- progress_map.rs.orig	2025-09-23 09:43:01.000000000 +0400
++++ progress_map.rs	2026-11-01 13:19:20.000000000 +0400
 @@ -188,6 +188,7 @@
      pub vote_threshold: Vec<ThresholdDecision>,
      pub is_locked_out: bool,
      pub voted_stakes: VotedStakes,
-+    pub is_mostly_confirmed: bool, //patch
++    pub is_mostly_confirmed: bool,
      pub duplicate_confirmed_hash: Option<Hash>,
      pub computed: bool,
      pub lockout_intervals: LockoutIntervals,
-@@ -375,6 +376,13 @@
+@@ -375,6 +376,11 @@
          slot_progress.fork_stats.duplicate_confirmed_hash = Some(hash);
      }
  
-+//patch BEGIN fn
 +    pub fn set_mostly_confirmed_slot(&mut self, slot: Slot) {
 +        let slot_progress = self.get_mut(&slot).unwrap();
 +        slot_progress.fork_stats.is_mostly_confirmed = true;
 +    }
-+//patch END fn
 +
      pub fn is_duplicate_confirmed(&self, slot: Slot) -> Option<bool> {
          self.progress_map

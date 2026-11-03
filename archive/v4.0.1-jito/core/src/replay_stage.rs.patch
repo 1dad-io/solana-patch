@@ -4,7 +4,7 @@
                  while poh_controller.has_pending_message() && !exit.load(Ordering::Relaxed) {}
              }
  
-+            let mut last_logged_vote_slot: Slot = u64::MAX; //patch TODO: check it really updates in fork_choice.rs
++            let mut last_logged_vote_slot: Slot = u64::MAX; //patch
 +
              loop {
                  // Stop getting entries if we get exit signal

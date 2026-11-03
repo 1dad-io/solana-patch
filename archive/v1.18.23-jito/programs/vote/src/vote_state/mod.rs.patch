@@ -1,5 +1,5 @@
---- /Users/admin/solana-tools/mods/v1.18.23-jito/programs/vote/src/vote_state/mod.rs.orig	2024-09-26 16:13:41.000000000 +0300
-+++ /Users/admin/solana-tools/mods/v1.18.23-jito/programs/vote/src/vote_state/mod.rs	2024-09-30 18:16:47.000000000 +0300
+--- mod.rs.orig	2024-09-26 17:13:41.000000000 +0400
++++ mod.rs	2024-09-30 19:16:47.000000000 +0400
 @@ -741,6 +741,7 @@
      current_slot: Slot,
      timely_vote_credits: bool,

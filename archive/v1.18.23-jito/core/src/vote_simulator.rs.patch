@@ -1,5 +1,5 @@
---- /Users/admin/solana-tools/mods/v1.18.23-jito/core/src/vote_simulator.rs.orig	2024-09-26 16:13:41.000000000 +0300
-+++ /Users/admin/solana-tools/mods/v1.18.23-jito/core/src/vote_simulator.rs	2024-09-30 16:33:47.000000000 +0300
+--- vote_simulator.rs.orig	2024-09-26 17:13:41.000000000 +0400
++++ vote_simulator.rs	2024-09-30 17:33:47.000000000 +0400
 @@ -183,6 +183,7 @@
  
          // Try to vote on the given slot

@@ -1,5 +1,5 @@
---- /Users/admin/solana-tools/mods/v1.18.23-jito/core/src/consensus/progress_map.rs.orig	2024-09-26 16:13:41.000000000 +0300
-+++ /Users/admin/solana-tools/mods/v1.18.23-jito/core/src/consensus/progress_map.rs	2024-09-30 13:16:08.000000000 +0300
+--- progress_map.rs.orig	2024-09-26 17:13:41.000000000 +0400
++++ progress_map.rs	2024-09-30 14:16:08.000000000 +0400
 @@ -303,6 +303,7 @@
      pub is_locked_out: bool,
      pub voted_stakes: VotedStakes,
